@@ -2,6 +2,8 @@
 # moOde CD Auto-Eject Monitor (English Version)
 # Listens for queue clearing and handles physical ejection
 
+rm -f /tmp/cd_pending.json
+
 WAS_PLAYING_CD=0
 
 while true; do

@@ -1,5 +1,5 @@
 #!/bin/bash
-# moOde CD Player Pro Plugin Setup Script
+# moOde CD Player Pro Plugin Setup Script (V2 - Interactive Modal Edition)
 # Developed for moOde 10.x integration
 # Target Device: /dev/sr0
 
@@ -7,82 +7,98 @@ echo "-------------------------------------------------------"
 echo "Starting moOde CD Player Pro Plugin Installation..."
 echo "-------------------------------------------------------"
 
-# 1. Install System Dependencies
-echo "[1/6] Installing system dependencies and Python libraries..."
-sudo apt update
-sudo apt -y install libcdio-dev libcdio-utils python3-musicbrainzngs python3-cdio \
-                  python3-requests python3-libdiscid swig cd-discid mpc eject setcd
+# # 1. 安裝系統依賴套件
+# echo "[1/7] Installing system dependencies and Python libraries..."
+# sudo apt update
+# sudo apt -y install libcdio-dev libcdio-utils python3-musicbrainzngs python3-cdio \
+#                   python3-requests python3-libdiscid swig cd-discid mpc eject setcd
 
-# Install python-mpd2 with system package override for Debian Bookworm
-sudo pip3 install -U python-mpd2 --break-system-packages
+# # 安裝 python-mpd2 (針對 Debian Bookworm)
+# sudo pip3 install -U python-mpd2 --break-system-packages
 
-# 2. Deploy Executable Scripts
-echo "[2/6] Deploying backend scripts to /usr/local/bin..."
-# Copy all executable scripts from backend folder
+# 2. 部署後端執行腳本
+echo "[2/7] Deploying backend scripts to /usr/local/bin..."
+# 複製主要執行檔與新增的 MPD 注入引擎
 sudo cp ./backend/moodecdplayer.py /usr/local/bin/moodecdplayer
 sudo cp ./backend/addaudiocd.sh /usr/local/bin/
 sudo cp ./backend/remaudiocd.sh /usr/local/bin/
 sudo cp ./backend/cd-autoeject.sh /usr/local/bin/
+sudo cp ./backend/cd_mpd_inject.py /usr/local/bin/
 
-# Set executable permissions for all deployed scripts
+# 賦予執行權限
 sudo chmod +x /usr/local/bin/moodecdplayer
 sudo chmod +x /usr/local/bin/addaudiocd.sh
 sudo chmod +x /usr/local/bin/remaudiocd.sh
 sudo chmod +x /usr/local/bin/cd-autoeject.sh
+sudo chmod +x /usr/local/bin/cd_mpd_inject.py
 
-# 3. Configure Systemd Services
-echo "[3/6] Configuring Systemd services..."
-sudo cp configs/*.service /etc/systemd/system/
+# 3. 建立 CD Metadata 快取目錄
+echo "[3/7] Setting up CD metadata cache directory..."
+sudo mkdir -p /var/lib/moode_cd_library
+sudo chown www-data:www-data /var/lib/moode_cd_library
+sudo chmod 775 /var/lib/moode_cd_library
 
-# Reload daemon and enable the auto-eject monitor service
-sudo systemctl daemon-reload
-sudo systemctl enable cd-autoeject.service
-sudo systemctl restart cd-autoeject.service
+# 4. 部署 PHP 指令橋樑
+echo "[4/7] Deploying PHP bridge scripts to /var/www/command/..."
+sudo cp ./ui/php/EjectCD.php /var/www/command/
+sudo cp ./ui/php/CheckCDState.php /var/www/command/
+sudo cp ./ui/php/ConfirmCDImport.php /var/www/command/
 
-# 4. Configure Hardware Detection (udev)
-echo "[4/6] Setting up udev hardware detection rules..."
-sudo cp configs/99-srX.rules /etc/udev/rules.d/
-sudo udevadm control --reload-rules
+# 設定 www-data 權限
+sudo chown www-data:www-data /var/www/command/EjectCD.php /var/www/command/CheckCDState.php /var/www/command/ConfirmCDImport.php
+sudo chmod 755 /var/www/command/EjectCD.php /var/www/command/CheckCDState.php /var/www/command/ConfirmCDImport.php
 
-# 5. Deploy UI Eject Button & PHP Backend
-echo "[5/6] Deploying UI Eject Button and PHP Backend..."
-# Copy PHP backend and set permissions (Updated to match your path: ./ui/php/)
-sudo cp ./ui/php/EjectCD.php /var/www/command/EjectCD.php
-sudo chown www-data:www-data /var/www/command/EjectCD.php
-sudo chmod 755 /var/www/command/EjectCD.php
+# 5. 部署 UI 資源並注入 header.php
+echo "[5/7] Deploying UI scripts and injecting into header.php..."
+sudo cp ./ui/js/inject-eject-btn.js /var/www/js/
+sudo cp ./ui/js/cd-import-modal.js /var/www/js/
+sudo cp ./ui/css/cd-import-modal.css /var/www/css/
+sudo cp ./ui/html/cd-import-modal.html /var/www/templates/
 
-# Copy JS frontend and set permissions
-sudo cp ./ui/js/inject-eject-btn.js /var/www/js/inject-eject-btn.js
 sudo chown www-data:www-data /var/www/js/inject-eject-btn.js
+sudo chown www-data:www-data /var/www/js/cd-import-modal.js
+sudo chown www-data:www-data /var/www/css/cd-import-modal.css
+sudo chown www-data:www-data /var/www/templates/cd-import-modal.html
 
-# NEW STRATEGY: Inject JS into header.php instead of indextpl
-# We target the "Common JS" comment for consistent placement
-if ! grep -q "inject-eject-btn.js" /var/www/header.php; then
-    sudo sed -i '/lib.min.js/a \    <script src="/js/inject-eject-btn.js" defer></script>' /var/www/header.php
-    echo "  -> Injected eject button script into header.php."
-else
-    echo "  -> Eject button script already injected into header.php. Skipping."
+
+# 注入 CSS 連結到 header.php (在 styles.min.css 之後)
+if ! grep -q "cd-import-modal.css" /var/www/header.php; then
+    sudo sed -i '/styles.min.css/a \\    <link rel="stylesheet" href="/css/cd-import-modal.css">' /var/www/header.php
 fi
 
-# 6. Configure Sudoers for Web Server (www-data)
-echo "[6/6] Configuring Sudoers for Web Server to allow ejection..."
-# Grant www-data permission to execute the eject script without password
-# (Updated to match your path: ./ui/php/)
-sudo cp ./ui/php/moodecdplayer_sudoers /etc/sudoers.d/moodecdplayer
+
+# 注入退片按鈕 JS (使用 lib.min.js 為錨點)
+if ! grep -q "inject-eject-btn.js" /var/www/header.php; then
+    sudo sed -i '/lib.min.js/a \\    <script src="/js/inject-eject-btn.js" defer></script>' /var/www/header.php
+    echo "  -> Injected Eject Button script."
+fi
+
+# 注入 CD 匯入彈窗 JS (緊接在退片 JS 之後)
+if ! grep -q "cd-import-modal.js" /var/www/header.php; then
+    sudo sed -i '/inject-eject-btn.js/a \\    <script src="/js/cd-import-modal.js" defer></script>' /var/www/header.php
+    echo "  -> Injected CD Import Modal script."
+fi
+
+# 6. 配置 Sudoers 白名單 (www-data)
+echo "[6/7] Configuring Sudoers for Interactive Import and Ejection..."
+# 建立一個包含退片與 MPD 注入權限的設定檔
+cat <<EOF > /tmp/moodecdplayer_sudoers
+www-data ALL=(ALL) NOPASSWD: /usr/local/bin/cd-autoeject.sh
+www-data ALL=(ALL) NOPASSWD: /usr/local/bin/cd_mpd_inject.py
+EOF
+
+sudo cp /tmp/moodecdplayer_sudoers /etc/sudoers.d/moodecdplayer
 sudo chown root:root /etc/sudoers.d/moodecdplayer
 sudo chmod 0440 /etc/sudoers.d/moodecdplayer
+rm /tmp/moodecdplayer_sudoers
 
-## 7. Persistent Hardware Button Unlock (Optional / Commented out)
-#echo "[7/7] Updating worker.sh for persistent hardware unlock..."
-## Check if the eject command already exists to prevent duplicate entries
-#if ! grep -q "eject -i off" /var/www/command/worker.sh; then
-#    # Insert unlock command before 'exit 0' in moOde's worker script
-#    sudo sed -i '/exit 0/i /usr/bin/eject -i off /dev/sr0 > /dev/null 2>&1' /var/www/command/worker.sh
-#    echo "Added hardware unlock to worker.sh."
-#else
-#    echo "Hardware unlock already configured in worker.sh. Skipping."
-#fi
+# 7. 配置 udev 規則
+echo "[7/7] Configuring udev rules for automatic detection..."
+UDEV_RULE='/etc/udev/rules.d/99-addaudiocd.rules'
+echo 'SUBSYSTEM=="block", KERNEL=="sr0", ACTION=="change", ENV{ID_CDROM_MEDIA_TRACK_COUNT_AUDIO}=="?*", RUN+="/usr/local/bin/addaudiocd.sh /dev/sr0"' | sudo tee $UDEV_RULE > /dev/null
+sudo udevadm control --reload-rules
 
 echo "-------------------------------------------------------"
-echo "Installation Complete! Please refresh your browser (Ctrl+F5)."
+echo "Installation Complete!"
+echo "Please refresh your moOde Web UI and insert a CD to test."
 echo "-------------------------------------------------------"

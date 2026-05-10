@@ -698,62 +698,55 @@ class MPD:
         if self.is_autoplay():
             self.play_disc()
 
-
     def load_disc(self):
         disc = self.disc()
 
-        # Load metadata that can be loaded quickly
-        method,metadata = fast_info(disc)
+        # 1. 取得基本資訊 (從 Cache -> CD-Text -> Default)
+        method, metadata = fast_info(disc)
 
-        # save the metadata if they are not feteched from cache
-        if method != "cached":
-            write_info_in_cache(disc,metadata)
+        # 2. 嘗試從 MusicBrainz 更新最完整的資訊 (包含封面下載)
+        updated = update_with_musicbrainz(disc, metadata)
 
-        install_cover(disc, only_from_cache=True)
-
-        m = self.connect()
-
-        # Sends the disc tracks to MPD
-        m.clear()
-        track_ids = {i : m.addid("cdda:///{}".format(i))
-                    for i in itrack(disc)
-                    }
-
-        m.command_list_ok_begin()
-        # And annote the track with the first set of metadata
-        for i in metadata["tracks"]:
-            for k in metadata["tracks"][i]:
-                m.addtagid(track_ids[i],k,metadata["tracks"][i][k])
-
-        m.command_list_end()
-
-        # If in autoplay mode launch the playlist
-        self.autoplay_disc()
-
-        # Check for update of the musicbrainz data
-        updated = update_with_musicbrainz(disc,metadata)
+        # 3. 寫入快取，並安裝 moOde 網頁所需的封面 symlink
+        if method != "cached" or updated:
+            write_info_in_cache(disc, metadata)
+        
+        # 建立網頁可以存取的封面捷徑 (這原本就寫在程式裡了)
         install_cover(disc, only_from_cache=False)
 
-        m = self.connect()
-
-        current_info = self.cd_queue_info()
-
-        m.command_list_ok_begin()
+        # --- 以下為全新邏輯：攔截 MPD 動作，改為輸出給前端的 JSON ---
         
-        for i in metadata["tracks"]:
-            current = current_info[i]
-            for k in metadata["tracks"][i]:
-                if k in current:
-                    m.cleartagid(track_ids[i],k)
-                m.addtagid(track_ids[i],k,metadata["tracks"][i][k])
-            
-        m.command_list_end()
+        album_title = metadata.get("album", "Unknown")
+        artist_name = metadata.get("albumartist", "Unknown")
 
-        if updated:
-            write_info_in_cache(disc,metadata)
+        # 整理音軌名稱列表 (確保順序正確)
+        tracks_list = []
+        if "tracks" in metadata:
+            # 原本的 key 是字串格式的數字，將其轉為整數排序
+            sorted_track_keys = sorted(metadata["tracks"].keys(), key=lambda x: int(x))
+            for tk in sorted_track_keys:
+                tracks_list.append(metadata["tracks"][tk].get("title", f"Track {tk}"))
 
+        # 取得前端可以存取的封面網址 (利用原始程式產生 md5 檔名的邏輯)
+        cover_hash = hashlib.md5(b"cdda://").hexdigest() + ".jpg"
+        cover_url = f"/imagesw/thmcache/{cover_hash}" # moOde 前端相對路徑
 
+        export_data = {
+            "status": "pending",
+            "album": album_title,
+            "artist": artist_name,
+            "cover": cover_url,
+            "tracks": tracks_list
+        }
 
+        # 寫入暫存檔，等待網頁前端 UI 輪詢抓取
+        try:
+            with open("/tmp/cd_pending.json", "w", encoding="utf-8") as f:
+                json.dump(export_data, f, ensure_ascii=False, indent=4)
+        except Exception as e:
+            print(f"寫入暫存檔失敗: {e}", file=sys.stderr, flush=True)
+
+        # 結束處理。完全不呼叫 m.connect(), m.addid() 等 MPD 播放指令。
 
 def on_insert(options):
     m = MPD(options = options)
@@ -768,6 +761,13 @@ def on_eject(options):
 
     m.clear_cd_tracks()
     uninstall_cover(m.disc())
+    
+    # 新增：退片時若暫存檔還在 (前端尚未確認)，則一併刪除
+    try:
+        if os.path.exists("/tmp/cd_pending.json"):
+            os.remove("/tmp/cd_pending.json")
+    except Exception as e:
+        pass
 
 def save_default_config(options):
     where = pathlib.Path(options.configfile)
