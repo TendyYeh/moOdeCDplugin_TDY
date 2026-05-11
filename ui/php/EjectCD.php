@@ -1,11 +1,12 @@
 <?php
-// 檔案位置：backend/EjectCD.php
+header('Content-Type: application/json');
 
-// 指定您的自訂退片腳本絕對路徑 (請依實際存放位置修改)
-$script_path = '/usr/local/bin/cd-autoeject.sh';
+// 呼叫我們剛剛建立的「一次性退片腳本」
+$output = shell_exec('sudo /usr/local/bin/cd-forceEject.sh 2>&1');
 
-// 為了確保有權限執行 eject 與 mpc 指令，一樣透過 sudo 執行，並捕捉輸出以利除錯
-$output = shell_exec("sudo " . $script_path . " 2>&1");
-
-echo "Success: " . $output;
+echo json_encode([
+    'status' => 'success',
+    'message' => 'Force eject executed',
+    'output' => $output
+]);
 ?>

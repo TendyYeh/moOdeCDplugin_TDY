@@ -23,12 +23,14 @@ sudo cp ./backend/moodecdplayer.py /usr/local/bin/moodecdplayer
 sudo cp ./backend/addaudiocd.sh /usr/local/bin/
 sudo cp ./backend/remaudiocd.sh /usr/local/bin/
 sudo cp ./backend/cd-autoeject.sh /usr/local/bin/
+sudo cp ./backend/cd-forceEject.sh /usr/local/bin/
 
 # Set executable permissions for all deployed scripts
 sudo chmod +x /usr/local/bin/moodecdplayer
 sudo chmod +x /usr/local/bin/addaudiocd.sh
 sudo chmod +x /usr/local/bin/remaudiocd.sh
 sudo chmod +x /usr/local/bin/cd-autoeject.sh
+sudo chmod +x /usr/local/bin/cd-forceEject.sh
 
 # 3. Configure Systemd Services
 echo "[3/6] Configuring Systemd services..."
@@ -71,17 +73,6 @@ echo "[6/6] Configuring Sudoers for Web Server to allow ejection..."
 sudo cp ./ui/php/moodecdplayer_sudoers /etc/sudoers.d/moodecdplayer
 sudo chown root:root /etc/sudoers.d/moodecdplayer
 sudo chmod 0440 /etc/sudoers.d/moodecdplayer
-
-## 7. Persistent Hardware Button Unlock (Optional / Commented out)
-#echo "[7/7] Updating worker.sh for persistent hardware unlock..."
-## Check if the eject command already exists to prevent duplicate entries
-#if ! grep -q "eject -i off" /var/www/command/worker.sh; then
-#    # Insert unlock command before 'exit 0' in moOde's worker script
-#    sudo sed -i '/exit 0/i /usr/bin/eject -i off /dev/sr0 > /dev/null 2>&1' /var/www/command/worker.sh
-#    echo "Added hardware unlock to worker.sh."
-#else
-#    echo "Hardware unlock already configured in worker.sh. Skipping."
-#fi
 
 echo "-------------------------------------------------------"
 echo "Installation Complete! Please refresh your browser (Ctrl+F5)."
