@@ -731,6 +731,37 @@ class MPD:
         cover_hash = hashlib.md5(b"cdda://").hexdigest() + ".jpg"
         cover_url = f"/imagesw/thmcache/{cover_hash}" # moOde 前端相對路徑
 
+        try:
+                import shutil
+                import os
+                
+                # moOde 的實際實體路徑
+                base_img_path = f"/var/local/www{cover_url}" 
+                
+                if os.path.exists(base_img_path):
+                    sm_img_path = base_img_path.replace(".jpg", "_sm.jpg")
+                    vw_img_path = base_img_path.replace(".jpg", "_vw.jpg")
+                    
+                    # 複製檔案
+                    shutil.copyfile(base_img_path, sm_img_path)
+                    shutil.copyfile(base_img_path, vw_img_path)
+                    
+                    # 【關鍵修正】：強制給予所有使用者讀取權限 (644)
+                    # 避免 udev 以 root 執行時產生 600 權限，導致 nginx 讀不到而報 404
+                    os.chmod(sm_img_path, 0o644)
+                    os.chmod(vw_img_path, 0o644)
+                    os.chmod(base_img_path, 0o644) # 順便確保原圖權限也正確
+                    
+                else:
+                    # 萬一原圖不存在，寫入 log 方便除錯
+                    with open("/tmp/cd_cover_error.log", "w") as f:
+                        f.write(f"找不到原圖：{base_img_path}\n")
+                        
+            except Exception as e:
+                # 把錯誤寫入暫存檔，不再吃掉錯誤
+                with open("/tmp/cd_cover_error.log", "w") as f:
+                    f.write(f"複製縮圖時發生錯誤：{str(e)}\n")
+
         export_data = {
             "status": "pending",
             "album": album_title,

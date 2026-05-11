@@ -13,4 +13,5 @@ else
   exit 1
 fi
 
-moodecdplayer --on-insert
+# 讓爬蟲與抓取邏輯脫離 udev 的控制，丟給系統背景執行
+systemd-run --no-block /usr/local/bin/moodecdplayer --on-insert > /tmp/udev_cd.log 2>&1

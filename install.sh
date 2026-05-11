@@ -93,10 +93,15 @@ sudo chmod 0440 /etc/sudoers.d/moodecdplayer
 rm /tmp/moodecdplayer_sudoers
 
 # 7. 配置 udev 規則
-echo "[7/7] Configuring udev rules for automatic detection..."
-UDEV_RULE='/etc/udev/rules.d/99-addaudiocd.rules'
-echo 'SUBSYSTEM=="block", KERNEL=="sr0", ACTION=="change", ENV{ID_CDROM_MEDIA_TRACK_COUNT_AUDIO}=="?*", RUN+="/usr/local/bin/addaudiocd.sh /dev/sr0"' | sudo tee $UDEV_RULE > /dev/null
+echo "[7/7] Setting up udev hardware detection rules..."
+sudo cp configs/99-srX.rules /etc/udev/rules.d/
 sudo udevadm control --reload-rules
+
+
+# echo "[7/7] Configuring udev rules for automatic detection..."
+# UDEV_RULE='/etc/udev/rules.d/99-addaudiocd.rules'
+# echo 'SUBSYSTEM=="block", KERNEL=="sr0", ACTION=="change", ENV{ID_CDROM_MEDIA_TRACK_COUNT_AUDIO}=="?*", RUN+="/usr/local/bin/addaudiocd.sh /dev/sr0"' | sudo tee $UDEV_RULE > /dev/null
+# sudo udevadm control --reload-rules
 
 echo "-------------------------------------------------------"
 echo "Installation Complete!"
