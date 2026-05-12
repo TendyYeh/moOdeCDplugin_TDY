@@ -11,7 +11,7 @@
         }
 
         // 2. 動態注入退片按鈕 (直接移除 disabled 與 opacity 限制，讓它預設就是亮的)
-        var targetGroup = $('#playbtns .btn-group');
+        var targetGroup = $('#togglebtns .btn-group');
         if (targetGroup.length > 0 && $('#btn-cd-eject').length === 0) {
             var ejectBtnHtml = '<button aria-label="Eject CD" id="btn-cd-eject" class="btn btn-custom-eject"><i class="fa-solid fa-sharp fa-eject"></i></button>';
             targetGroup.append(ejectBtnHtml);
