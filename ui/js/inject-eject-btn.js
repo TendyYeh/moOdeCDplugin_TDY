@@ -3,7 +3,7 @@
         // 1. 注入專屬的 CSS
         if ($('#eject-btn-style').length === 0) {
             var css = '<style id="eject-btn-style">' +
-                '#playbtns .btn-group .btn { padding-left: 11px !important; padding-right: 11px !important; } ' +
+                '#togglebtns .btn-group .btn { padding-left: 11px !important; padding-right: 11px !important; } ' +
                 '#btn-cd-eject { transition: transform 0.1s ease-in-out, opacity 0.3s ease-in-out !important; } ' +
                 '#btn-cd-eject:active:not([disabled]), #btn-cd-eject.active:not([disabled]) { transform: scale(0.85) !important; }' +
                 '</style>';
@@ -18,7 +18,7 @@
         }
 
         // 3. 綁定按鈕動畫與實質的退片呼叫
-        $('#playbtns')
+        $('#togglebtns')
             .on('mousedown touchstart', '#btn-cd-eject:not([disabled])', function() {
                 $(this).addClass('active');
             })
