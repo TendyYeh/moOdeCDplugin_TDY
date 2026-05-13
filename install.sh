@@ -22,14 +22,14 @@ echo "[2/6] Deploying backend scripts to /usr/local/bin..."
 sudo cp ./backend/moodecdplayer.py /usr/local/bin/moodecdplayer
 sudo cp ./backend/addaudiocd.sh /usr/local/bin/
 sudo cp ./backend/remaudiocd.sh /usr/local/bin/
-sudo cp ./backend/cd-autoeject.sh /usr/local/bin/
+# sudo cp ./backend/cd-autoeject.sh /usr/local/bin/
 sudo cp ./backend/cd-forceEject.sh /usr/local/bin/
 
 # Set executable permissions for all deployed scripts
 sudo chmod +x /usr/local/bin/moodecdplayer
 sudo chmod +x /usr/local/bin/addaudiocd.sh
 sudo chmod +x /usr/local/bin/remaudiocd.sh
-sudo chmod +x /usr/local/bin/cd-autoeject.sh
+# sudo chmod +x /usr/local/bin/cd-autoeject.sh
 sudo chmod +x /usr/local/bin/cd-forceEject.sh
 
 # 3. Configure Systemd Services
@@ -37,9 +37,9 @@ echo "[3/6] Configuring Systemd services..."
 sudo cp configs/*.service /etc/systemd/system/
 
 # Reload daemon and enable the auto-eject monitor service
-sudo systemctl daemon-reload
-sudo systemctl enable cd-autoeject.service
-sudo systemctl restart cd-autoeject.service
+# sudo systemctl daemon-reload
+# sudo systemctl enable cd-autoeject.service
+# sudo systemctl restart cd-autoeject.service
 
 # 4. Configure Hardware Detection (udev)
 echo "[4/6] Setting up udev hardware detection rules..."
