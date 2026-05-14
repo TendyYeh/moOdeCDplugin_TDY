@@ -699,58 +699,45 @@ class MPD:
             self.play_disc()
 
 
+    # 修改 load_disc 函數
     def load_disc(self):
         disc = self.disc()
+        method, metadata = fast_info(disc)
+        updated = update_with_musicbrainz(disc, metadata)
 
-        # Load metadata that can be loaded quickly
-        method,metadata = fast_info(disc)
-
-        # save the metadata if they are not feteched from cache
-        if method != "cached":
-            write_info_in_cache(disc,metadata)
-
-        install_cover(disc, only_from_cache=True)
-
-        m = self.connect()
-
-        # Sends the disc tracks to MPD
-        m.clear()
-        track_ids = {i : m.addid("cdda:///{}".format(i))
-                    for i in itrack(disc)
-                    }
-
-        m.command_list_ok_begin()
-        # And annote the track with the first set of metadata
-        for i in metadata["tracks"]:
-            for k in metadata["tracks"][i]:
-                m.addtagid(track_ids[i],k,metadata["tracks"][i][k])
-
-        m.command_list_end()
-
-        # If in autoplay mode launch the playlist
-        self.autoplay_disc()
-
-        # Check for update of the musicbrainz data
-        updated = update_with_musicbrainz(disc,metadata)
+        if method != "cached" or updated:
+            write_info_in_cache(disc, metadata)
+        
         install_cover(disc, only_from_cache=False)
 
-        m = self.connect()
+        # --- 攔截 MPD 動作，改為輸出 JSON ---
+        album_title = metadata.get("album", "Unknown")
+        artist_name = metadata.get("albumartist", "Unknown")
 
-        current_info = self.cd_queue_info()
+        tracks_list = []
+        if "tracks" in metadata:
+            sorted_track_keys = sorted(metadata["tracks"].keys(), key=lambda x: int(x))
+            for tk in sorted_track_keys:
+                tracks_list.append(metadata["tracks"][tk].get("title", f"Track {tk}"))
 
-        m.command_list_ok_begin()
-        
-        for i in metadata["tracks"]:
-            current = current_info[i]
-            for k in metadata["tracks"][i]:
-                if k in current:
-                    m.cleartagid(track_ids[i],k)
-                m.addtagid(track_ids[i],k,metadata["tracks"][i][k])
-            
-        m.command_list_end()
+        import hashlib
+        cover_hash = hashlib.md5(b"cdda://").hexdigest() + ".jpg"
+        cover_url = f"/imagesw/thmcache/{cover_hash}" 
 
-        if updated:
-            write_info_in_cache(disc,metadata)
+        export_data = {
+            "status": "pending",
+            "album": album_title,
+            "artist": artist_name,
+            "cover": cover_url,
+            "tracks": tracks_list
+        }
+
+        try:
+            import json, os
+            with open("/tmp/cd_pending.json", "w", encoding="utf-8") as f:
+                json.dump(export_data, f, ensure_ascii=False, indent=4)
+        except Exception as e:
+            pass
 
 
 
@@ -768,6 +755,13 @@ def on_eject(options):
 
     m.clear_cd_tracks()
     uninstall_cover(m.disc())
+
+    try:
+        import os
+        if os.path.exists("/tmp/cd_pending.json"):
+            os.remove("/tmp/cd_pending.json")
+    except Exception as e:
+        pass
 
 def save_default_config(options):
     where = pathlib.Path(options.configfile)

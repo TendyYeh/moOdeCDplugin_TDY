@@ -1,0 +1,142 @@
+/* --- Custom CD Modal Styles --- */
+
+
+/* 背景遮罩 */
+
+.tdy-modal-backdrop {
+    position: fixed;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 10400;
+    background-color: #000;
+    opacity: 0.85;
+    display: none;
+}
+
+
+/* 視窗主體定位 */
+
+.tdy-modal {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 10500;
+    width: 90%;
+    max-width: 450px;
+    display: none;
+}
+
+
+/* 視窗內容容器 */
+
+.tdy-modal-content {
+    background: #1c1c1c;
+    color: #fff;
+    border: 1px solid #444;
+    border-radius: 8px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8);
+}
+
+.tdy-modal-header {
+    border-bottom: 1px solid #333;
+    padding: 15px;
+}
+
+.tdy-modal-title {
+    color: var(--accentxts);
+    font-weight: bold;
+    margin: 0;
+    font-size: 18px;
+}
+
+.tdy-modal-body {
+    padding: 20px;
+    text-align: center;
+}
+
+
+/* 封面圖片樣式 */
+
+.tdy-cover-container {
+    margin-bottom: 20px;
+}
+
+.tdy-modal-cover {
+    width: 180px;
+    height: 180px;
+    border-radius: 5px;
+    box-shadow: 0 0 15px rgba(0, 0, 0, 0.5);
+    object-fit: cover;
+}
+
+
+/* 表單與輸入框樣式 */
+
+.tdy-control-group {
+    margin-bottom: 12px;
+    text-align: left;
+}
+
+.tdy-input-label {
+    color: #aaa;
+    font-size: 11px;
+    display: block;
+    margin-bottom: 5px;
+    text-transform: uppercase;
+}
+
+.tdy-input-field {
+    width: 100%;
+    box-sizing: border-box;
+    background: #000;
+    color: #fff;
+    border: 1px solid #555;
+    padding: 8px;
+    border-radius: 4px;
+}
+
+
+/* 手動搜尋區塊 */
+
+.tdy-search-box {
+    display: none;
+    padding-top: 10px;
+    border-top: 1px dashed #444;
+}
+
+.tdy-search-input {
+    width: 70%;
+    background: #111;
+    color: #fff;
+    border: 1px solid #555;
+    padding: 6px;
+    border-radius: 4px;
+}
+
+
+/* 底部按鈕區 (Flexbox 水平對齊) */
+
+.tdy-modal .modal-footer {
+    border-top: 1px solid #333;
+    padding: 15px;
+    display: flex !important;
+    gap: 10px;
+    justify-content: center;
+    align-items: center;
+}
+
+.tdy-modal .modal-footer button {
+    margin: 0 !important;
+}
+
+.tdy-btn-search,
+.tdy-btn-eject {
+    flex: 1;
+}
+
+.tdy-btn-import {
+    flex: 1.5;
+}

@@ -23,12 +23,14 @@ sudo cp ./backend/moodecdplayer.py /usr/local/bin/moodecdplayer
 sudo cp ./backend/addaudiocd.sh /usr/local/bin/
 sudo cp ./backend/remaudiocd.sh /usr/local/bin/
 sudo cp ./backend/cd-autoeject.sh /usr/local/bin/
+sudo cp ./backend/cd_mpd_inject.py /usr/local/bin/
 
 # Set executable permissions for all deployed scripts
 sudo chmod +x /usr/local/bin/moodecdplayer
 sudo chmod +x /usr/local/bin/addaudiocd.sh
 sudo chmod +x /usr/local/bin/remaudiocd.sh
 sudo chmod +x /usr/local/bin/cd-autoeject.sh
+sudo chmod +x /usr/local/bin/cd_mpd_inject.py
 
 # 3. Configure Systemd Services
 echo "[3/6] Configuring Systemd services..."
@@ -46,14 +48,30 @@ sudo udevadm control --reload-rules
 
 # 5. Deploy UI Eject Button & PHP Backend
 echo "[5/6] Deploying UI Eject Button and PHP Backend..."
+sudo cp ./ui/css/cd-import-modal.css /var/www/css/
+sudo cp ./ui/html/cd-import-modal.html /var/www/templates/
+
+sudo chown www-data:www-data /var/www/css/cd-import-modal.css
+sudo chown www-data:www-data /var/www/templates/cd-import-modal.html
 # Copy PHP backend and set permissions (Updated to match your path: ./ui/php/)
 sudo cp ./ui/php/EjectCD.php /var/www/command/EjectCD.php
 sudo chown www-data:www-data /var/www/command/EjectCD.php
 sudo chmod 755 /var/www/command/EjectCD.php
 
+sudo cp ./ui/php/CheckCDState.php /var/www/command/CheckCDState.php
+sudo chown www-data:www-data /var/www/command/CheckCDState.php
+sudo chmod 755 /var/www/command/CheckCDState.php
+
+sudo cp ./ui/php/ConfirmCDImport.php /var/www/command/ConfirmCDImport.php
+sudo chown www-data:www-data /var/www/command/ConfirmCDImport.php
+sudo chmod 755 /var/www/command/ConfirmCDImport.php
+
 # Copy JS frontend and set permissions
 sudo cp ./ui/js/inject-eject-btn.js /var/www/js/inject-eject-btn.js
 sudo chown www-data:www-data /var/www/js/inject-eject-btn.js
+
+sudo cp ./ui/js/cd-import-modal.js /var/www/js/cd-import-modal.js
+sudo chown www-data:www-data /var/www/js/cd-import-modal.js
 
 # NEW STRATEGY: Inject JS into header.php instead of indextpl
 # We target the "Common JS" comment for consistent placement
@@ -62,6 +80,15 @@ if ! grep -q "inject-eject-btn.js" /var/www/header.php; then
     echo "  -> Injected eject button script into header.php."
 else
     echo "  -> Eject button script already injected into header.php. Skipping."
+fi
+
+if ! grep -q "cd-import-modal.css" /var/www/header.php; then
+    sudo sed -i '/styles.min.css/a \\    <link rel="stylesheet" href="/css/cd-import-modal.css">' /var/www/header.php
+fi
+
+if ! grep -q "cd-import-modal.js" /var/www/header.php; then
+    sudo sed -i '/inject-eject-btn.js/a \\    <script src="/js/cd-import-modal.js" defer></script>' /var/www/header.php
+    echo "  -> Injected CD Import Modal script."
 fi
 
 # 6. Configure Sudoers for Web Server (www-data)

@@ -1,0 +1,48 @@
+<div id="cd-import-backdrop" class="tdy-modal-backdrop"></div>
+<div id="cd-import-modal" class="tdy-modal" tabindex="-1" role="dialog">
+    <div class="modal-dialog" style="margin: 0; width: 100%;">
+        <div class="tdy-modal-content">
+
+            <div class="tdy-modal-header">
+                <h4 class="tdy-modal-title">
+                    <i class="fa fa-compact-disc"></i> AUDIO CD DETECTED
+                </h4>
+            </div>
+
+            <div class="tdy-modal-body">
+                <div class="tdy-cover-container">
+                    <img id="cd-modal-cover" class="tdy-modal-cover" src="">
+                </div>
+
+                <div class="form-horizontal">
+                    <div class="tdy-control-group">
+                        <label class="tdy-input-label">ARTIST</label>
+                        <input type="text" id="cd-modal-artist" class="tdy-input-field">
+                    </div>
+                    <div class="tdy-control-group">
+                        <label class="tdy-input-label">ALBUM TITLE</label>
+                        <input type="text" id="cd-modal-album" class="tdy-input-field">
+                    </div>
+                </div>
+
+                <div id="manual-search-box" class="tdy-search-box">
+                    <input type="text" id="search-keyword" class="tdy-search-input" placeholder="Enter keywords...">
+                    <button id="btn-do-search" class="btn btn-cmd">Search</button>
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <button id="btn-manual-toggle" class="btn btn-cmd tdy-btn-search" style="background: #333; color: #fff;">
+                    <i class="fa fa-search"></i> Search
+                </button>
+                <button id="btn-eject-cancel" class="btn btn-cmd tdy-btn-eject" style="background: #444; color: #fff;">
+                    <i class="fa fa-eject"></i> Eject
+                </button>
+                <button id="btn-confirm-import" class="btn btn-cmd tdy-btn-import" style="background: var(--accentxts); color: #000;">
+                    <i class="fa fa-play"></i> Import
+                </button>
+            </div>
+
+        </div>
+    </div>
+</div>
